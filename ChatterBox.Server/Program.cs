@@ -1,10 +1,14 @@
-﻿namespace ChatterBox.Server
+﻿using ChatterBox.Server.Network;
+
+using System.Net;
+
+namespace ChatterBox.Server
 {
     internal class Program
     {
-        static void Main(string[] args)
+        static async Task Main(string[] args)
         {
-            Console.WriteLine("Hello, World!");
+            await new ChatterServer(IPAddress.Any, 4411).StartAsync(1000);
         }
     }
 }
