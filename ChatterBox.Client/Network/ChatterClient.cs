@@ -8,6 +8,8 @@ namespace ChatterBox.Client.Network
 {
     public class ChatterClient
     {
+        public string Username { get; set; }
+
         private TcpClient tcpClient;
 
         private IPAddress ipAddress;
@@ -19,6 +21,8 @@ namespace ChatterBox.Client.Network
             this.port = port;
 
             tcpClient = new TcpClient();
+
+            this.Username = "Unnamed";
         }
 
         public async Task ConnectAsync()
@@ -30,9 +34,8 @@ namespace ChatterBox.Client.Network
 
         private async Task Init()
         {
-            string name = "AnchyDev";
-            var sizeOfPayload = Encoding.UTF8.GetByteCount(name);
-            var authPayload = new PacketBuilder(PacketTypes.Auth).AppendInt(sizeOfPayload).AppendString("AnchyDev").Build();
+            var sizeOfPayload = Encoding.UTF8.GetByteCount(Username);
+            var authPayload = new PacketBuilder(PacketTypes.Auth).AppendInt(sizeOfPayload).AppendString(Username).Build();
 
             await tcpClient.Client.SendAsync(authPayload, SocketFlags.None);
 
