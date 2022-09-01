@@ -25,6 +25,16 @@ namespace ChatterBox.Client.Network
             this.Username = "Unnamed";
         }
 
+        public void SetUsername(string newName)
+        {
+            if(string.IsNullOrWhiteSpace(newName))
+            {
+                return;
+            }
+
+            Username = newName;
+        }
+
         public async Task ConnectAsync()
         {
             tcpClient.Connect(ipAddress, port);
