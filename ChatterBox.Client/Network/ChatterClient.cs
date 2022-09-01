@@ -1,5 +1,8 @@
-﻿using System.Net;
+﻿using ChatterBox.Shared.Network;
+using System.Net;
 using System.Net.Sockets;
+using System.Runtime.CompilerServices;
+using System.Text;
 
 namespace ChatterBox.Client.Network
 {
@@ -18,9 +21,25 @@ namespace ChatterBox.Client.Network
             tcpClient = new TcpClient();
         }
 
-        public void Connect()
+        public async Task ConnectAsync()
         {
             tcpClient.Connect(ipAddress, port);
+
+            await Init();
+        }
+
+        private async Task Init()
+        {
+            string name = "AnchyDev";
+            var sizeOfPayload = Encoding.UTF8.GetByteCount(name);
+            var authPayload = new PacketBuilder(PacketTypes.Auth).AppendInt(sizeOfPayload).AppendString("AnchyDev").Build();
+
+            await tcpClient.Client.SendAsync(authPayload, SocketFlags.None);
+
+            while(true)
+            {
+                await Task.Delay(100);
+            }
         }
     }
 }
