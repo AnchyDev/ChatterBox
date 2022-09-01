@@ -6,9 +6,11 @@ namespace ChatterBox.Client
 {
     internal class Program
     {
-        static void Main(string[] args)
+        static async Task Main(string[] args)
         {
-            new ChatterClient(IPAddress.Parse("margo-canoe.bnr.la"), 4411).Connect();
+            var client = new ChatterClient(IPAddress.Parse("127.0.0.1"), 4411);
+
+            await client.ConnectAsync();
         }
     }
 }
