@@ -10,6 +10,7 @@ namespace ChatterBox.Client
         {
             Console.Write("Enter Username: ");
             var username = Console.ReadLine();
+            //var client = new ChatterClient(Dns.GetHostEntry("localhost").AddressList[0], 4411);
             var client = new ChatterClient(IPAddress.Parse("127.0.0.1"), 4411);
             client.SetUsername(username);
             await client.ConnectAsync();

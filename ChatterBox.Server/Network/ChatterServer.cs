@@ -8,38 +8,41 @@ namespace ChatterBox.Server.Network
 {
     public class ChatterServer
     {
-        class ClientData
-        {
-            public TcpClient Client { get; set; }
-            public string Name { get; set; }
-        }
-
         private TcpListener _listener;
+        private IPAddress _ipAddress;
+        private int _port;
 
         private CancellationToken cancellationToken;
         private CancellationTokenSource cancellationTokenSrc;
 
-        private List<ClientData> connectedClients;
+        private List<ChatterUser> connectedClients;
 
         public ChatterServer(IPAddress ipAddress, int port)
         {
             _listener = new TcpListener(ipAddress, port);
+            _ipAddress = ipAddress;
+            _port = port;
+
             cancellationTokenSrc = new CancellationTokenSource();
             cancellationToken = cancellationTokenSrc.Token;
-            connectedClients = new List<ClientData>();
+            connectedClients = new List<ChatterUser>();
         }
 
         public async Task StartAsync(int backlog)
         {
+            Console.WriteLine("Starting server..");
+
             _listener.Start(backlog);
 
-            Console.WriteLine("Listening for client connections..");
+            Console.WriteLine($">> Binded to '{_ipAddress}' and listening on port '{_port}'.");
+
+            Console.WriteLine("Waiting for client connections..");
 
             while (!cancellationToken.IsCancellationRequested)
             {
                 TcpClient client = await _listener.AcceptTcpClientAsync();
-                Console.WriteLine($"Client {client.Client.RemoteEndPoint} connected.");
-                HandleClient(client);
+                Console.WriteLine($">> Client {client.Client.RemoteEndPoint} connected.");
+                HandleClient(new ChatterUser() { Client = client });
             }
 
             await Cleanup();
@@ -54,7 +57,7 @@ namespace ChatterBox.Server.Network
         {
             foreach(var client in connectedClients)
             {
-                await ClientDisconnect(client.Client);
+                await ClientDisconnect(client.Client, "The server has closed.");
             }
 
             connectedClients.Clear();
@@ -62,46 +65,44 @@ namespace ChatterBox.Server.Network
             _listener.Stop();
         }
 
-        private async Task ClientDisconnect(TcpClient client)
+        private async Task ClientDisconnect(TcpClient client, string reason)
         {
+
+            byte[] disconnectPacket = new PacketBuilder(PacketType.Disconnect)
+                .AppendInt(Encoding.UTF8.GetByteCount(reason))
+                .AppendString(reason)
+                .Build();
+
+            NetworkStream ns = client.GetStream();
+
+            if(ns.CanWrite)
+            {
+                await ns.WriteAsync(disconnectPacket, 0, disconnectPacket.Length);
+                await ns.FlushAsync();
+            }
+
             client.Close();
         }
 
-        private async Task<bool> AuthenticateClient(TcpClient client)
+        private async Task<bool> AuthenticateClient(ChatterUser user)
         {
-            await DisplayMessage("Waiting for auth payload from " + client.Client.RemoteEndPoint);
+            await DisplayMessage("Waiting for auth payload from " + user.Client.Client.RemoteEndPoint);
 
-            PacketType packetType = (PacketType)await GetIntFromStreamAsync(client.GetStream());
+            PacketType packetType = (PacketType)await user.Client.GetStream().GetIntAsync();
 
-            await DisplayMessage("Received data from " + client.Client.RemoteEndPoint);
+            await DisplayMessage(">> Received data from " + user.Client.Client.RemoteEndPoint);
 
             if (packetType != PacketType.Auth)
             {
                 return false;
             }
 
-            int packetLength = await GetIntFromStreamAsync(client.GetStream());
-            string packetAuth = await GetStringFromStreamAsync(client.GetStream(), packetLength);
+            int? packetLength = await user.Client.GetStream().GetIntAsync();
+            string? packetAuth = await user.Client.GetStream().GetStringAsync(packetLength.Value);
 
-            if (connectedClients.Any(c => c.Name == packetAuth))
-            {
-                return false;
-            }
-
-            connectedClients.Add(new ClientData()
-            {
-                Name = packetAuth,
-                Client = client
-            });
-
-            await DisplayMessage($"Authenticated client " + client.Client.RemoteEndPoint);
+            user.Name = packetAuth;
 
             return true;
-        }
-
-        private ClientData GetClientFromPool(TcpClient client)
-        {
-            return connectedClients.FirstOrDefault(c => c.Client.Client.RemoteEndPoint.Equals(client.Client.RemoteEndPoint));
         }
 
         private async Task DisplayMessage(string message)
@@ -109,77 +110,56 @@ namespace ChatterBox.Server.Network
             Console.WriteLine(message);
         }
 
-        private async Task<string?> ClientAcceptMessage(TcpClient client)
+        private async Task<string?> ClientAcceptMessage(ChatterUser user)
         {
-            var cancelToken = new CancellationTokenSource();
-            cancelToken.CancelAfter(10000);
+            int? packetType = await user.Client.GetStream().GetIntAsync();
 
-            int? packetType = await client.GetStream().GetIntAsync(cancelToken.Token);
-
-            if (!packetType.HasValue || (PacketType)packetType != PacketType.Message)
+            if (!packetType.HasValue)
             {
+                await DisplayMessage("Failed to get packetType.");
                 return null;
             }
 
-            int packetLength = await GetIntFromStreamAsync(client.GetStream());
-            string? packetMessage = await client.GetStream().GetStringAsync(packetLength, cancelToken.Token);
+            if((PacketType)packetType != PacketType.Message)
+            {
+                await DisplayMessage("Packet Type not 'Message'");
+                return null;
+            }
+
+            int? packetLength = await user.Client.GetStream().GetIntAsync();
+            string? packetMessage = await user.Client.GetStream().GetStringAsync(packetLength.Value);
 
             return packetMessage;
         }
 
-        private async Task HandleClient(TcpClient client)
+        private async Task HandleClient(ChatterUser user)
         {
-            if(!await AuthenticateClient(client))
+            if(!await AuthenticateClient(user))
             {
-                await ClientDisconnect(client);
+                await ClientDisconnect(user.Client, "Failed to authenticate client.");
                 return;
             }
 
-            ClientData clientData = GetClientFromPool(client);
-
-            if(clientData == null)
+            if (connectedClients.Contains(user))
             {
-                await ClientDisconnect(client);
+                await ClientDisconnect(user.Client, "There is already a user connected from this endpoint.");
+                return;
             }
 
-            while(client.Connected)
-            {
-                string? message = await ClientAcceptMessage(client);
+            await DisplayMessage($">> Authenticated client [{user.Client.Client.RemoteEndPoint}]: {user.Name}");
 
-                if(!string.IsNullOrEmpty(message))
+            connectedClients.Add(user);
+
+            while(user.Client.Connected)
+            {
+                string? message = await ClientAcceptMessage(user);
+
+                if (!string.IsNullOrEmpty(message))
                 {
-                    await DisplayMessage("Received data from " + client.Client.RemoteEndPoint);
-                    await DisplayMessage($"{clientData?.Name}: {message}");
-                } 
+                    await DisplayMessage($">> Received data from [{user.Client.Client.RemoteEndPoint}]: {user.Name}");
+                    await DisplayMessage($">> {user.Name}: {message}");
+                }
             }
-        }
-
-        private async Task<int> GetIntFromStreamAsync(NetworkStream ns)
-        {
-            int bytesRead = 0;
-            byte[] buffer = new byte[4];
-
-            do
-            {
-                bytesRead = await ns.ReadAsync(buffer);
-            }
-            while (bytesRead < buffer.Length);
-
-            return BitConverter.ToInt32(buffer);
-        }
-
-        private async Task<string> GetStringFromStreamAsync(NetworkStream ns, int len)
-        {
-            int bytesRead = 0;
-            byte[] buffer = new byte[len];
-
-            do
-            {
-                bytesRead = await ns.ReadAsync(buffer);
-            }
-            while (bytesRead < buffer.Length);
-
-            return Encoding.UTF8.GetString(buffer);
         }
     }
 }

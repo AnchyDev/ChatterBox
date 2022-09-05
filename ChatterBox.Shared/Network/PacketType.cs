@@ -9,6 +9,7 @@ namespace ChatterBox.Shared.Network
     public enum PacketType
     {
         Auth = 1,
-        Message = 2
+        Message = 2,
+        Disconnect = 3
     }
 }

@@ -5,7 +5,7 @@ namespace ChatterBox.Shared.Network
 {
     public static class NetworkStreamExtensions
     {
-        public static async Task<byte[]> GetBytesAsync(this NetworkStream ns, int length, CancellationToken cancelToken)
+        public static async Task<byte[]> GetBytesAsync(this NetworkStream ns, int length)
         {
             if (!ns.CanRead)
             {
@@ -15,23 +15,14 @@ namespace ChatterBox.Shared.Network
             int bytesRead = 0;
             byte[] buffer = new byte[length];
 
-            do
-            {
-                bytesRead += await ns.ReadAsync(buffer, 0, length);
-            }
-            while (ns.DataAvailable && bytesRead != buffer.Length && !cancelToken.IsCancellationRequested);
-
-            if (cancelToken.IsCancellationRequested)
-            {
-                return null;
-            }
+            await ns.ReadAsync(buffer, 0, length);
 
             return buffer;
         }
 
-        public static async Task<int?> GetIntAsync(this NetworkStream ns, CancellationToken cancelToken)
+        public static async Task<int?> GetIntAsync(this NetworkStream ns)
         {
-            byte[] buffer = await ns.GetBytesAsync(sizeof(int), cancelToken);
+            byte[] buffer = await ns.GetBytesAsync(sizeof(int));
 
             if(buffer == null)
             {
@@ -41,9 +32,9 @@ namespace ChatterBox.Shared.Network
             return BitConverter.ToInt32(buffer);
         }
 
-        public static async Task<string?> GetStringAsync(this NetworkStream ns, int length, CancellationToken cancelToken)
+        public static async Task<string?> GetStringAsync(this NetworkStream ns, int length)
         {
-            byte[] buffer = await ns.GetBytesAsync(length, cancelToken);
+            byte[] buffer = await ns.GetBytesAsync(length);
 
             if (buffer == null)
             {
