@@ -56,7 +56,7 @@ namespace ChatterBox.Server.Network
         {
             await DisplayMessage("Waiting for auth payload from " + client.Client.RemoteEndPoint);
 
-            PacketType packetType = (PacketType)await GetPacketIntFromStream(client.GetStream());
+            PacketType packetType = (PacketType)await GetIntFromStreamAsync(client.GetStream());
 
             await DisplayMessage("Received data from " + client.Client.RemoteEndPoint);
 
@@ -65,8 +65,8 @@ namespace ChatterBox.Server.Network
                 return false;
             }
 
-            int packetLength = await GetPacketIntFromStream(client.GetStream());
-            string packetAuth = await GetPacketStringFromStream(client.GetStream(), packetLength);
+            int packetLength = await GetIntFromStreamAsync(client.GetStream());
+            string packetAuth = await GetStringFromStreamAsync(client.GetStream(), packetLength);
 
             if (connectedClients.Any(c => c.Name == packetAuth))
             {
@@ -96,7 +96,7 @@ namespace ChatterBox.Server.Network
 
         private async Task<string> ClientAcceptMessage(TcpClient client)
         {
-            PacketType packetType = (PacketType)await GetPacketIntFromStream(client.GetStream());
+            PacketType packetType = (PacketType)await GetIntFromStreamAsync(client.GetStream());
 
             if (packetType != PacketType.Message)
             {
@@ -104,8 +104,8 @@ namespace ChatterBox.Server.Network
                 return string.Empty;
             }
 
-            int packetLength = await GetPacketIntFromStream(client.GetStream());
-            string packetMessage = await GetPacketStringFromStream(client.GetStream(), packetLength);
+            int packetLength = await GetIntFromStreamAsync(client.GetStream());
+            string packetMessage = await GetStringFromStreamAsync(client.GetStream(), packetLength);
 
             await DisplayMessage("Received data from " + client.Client.RemoteEndPoint);
 
@@ -136,7 +136,7 @@ namespace ChatterBox.Server.Network
             }
         }
 
-        private async Task<int> GetPacketIntFromStream(NetworkStream ns)
+        private async Task<int> GetIntFromStreamAsync(NetworkStream ns)
         {
             int bytesRead = 0;
             byte[] buffer = new byte[4];
@@ -150,7 +150,7 @@ namespace ChatterBox.Server.Network
             return BitConverter.ToInt32(buffer);
         }
 
-        private async Task<string> GetPacketStringFromStream(NetworkStream ns, int len)
+        private async Task<string> GetStringFromStreamAsync(NetworkStream ns, int len)
         {
             int bytesRead = 0;
             byte[] buffer = new byte[len];
