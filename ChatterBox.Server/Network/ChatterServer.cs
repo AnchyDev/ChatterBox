@@ -94,20 +94,20 @@ namespace ChatterBox.Server.Network
             Console.WriteLine(message);
         }
 
-        private async Task<string> ClientAcceptMessage(TcpClient client)
+        private async Task<string?> ClientAcceptMessage(TcpClient client)
         {
-            PacketType packetType = (PacketType)await GetIntFromStreamAsync(client.GetStream());
+            var cancelToken = new CancellationTokenSource();
+            cancelToken.CancelAfter(10000);
 
-            if (packetType != PacketType.Message)
+            int? packetType = await client.GetStream().GetIntAsync(cancelToken.Token);
+
+            if (!packetType.HasValue || (PacketType)packetType != PacketType.Message)
             {
-                await DisplayMessage("Invalid packet data!");
-                return string.Empty;
+                return null;
             }
 
             int packetLength = await GetIntFromStreamAsync(client.GetStream());
-            string packetMessage = await GetStringFromStreamAsync(client.GetStream(), packetLength);
-
-            await DisplayMessage("Received data from " + client.Client.RemoteEndPoint);
+            string? packetMessage = await client.GetStream().GetStringAsync(packetLength, cancelToken.Token);
 
             return packetMessage;
         }
@@ -129,10 +129,13 @@ namespace ChatterBox.Server.Network
 
             while(client.Connected)
             {
-                string message = await ClientAcceptMessage(client);
+                string? message = await ClientAcceptMessage(client);
 
                 if(!string.IsNullOrEmpty(message))
-                    await DisplayMessage($"{message}");
+                {
+                    await DisplayMessage("Received data from " + client.Client.RemoteEndPoint);
+                    await DisplayMessage($"{clientData?.Name}: {message}");
+                } 
             }
         }
 
