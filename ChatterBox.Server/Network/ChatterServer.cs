@@ -1,6 +1,7 @@
 ﻿using ChatterBox.Shared.Network;
 using System.Net;
 using System.Net.Sockets;
+using System.Runtime.CompilerServices;
 using System.Text;
 
 namespace ChatterBox.Server.Network
@@ -40,11 +41,25 @@ namespace ChatterBox.Server.Network
                 Console.WriteLine($"Client {client.Client.RemoteEndPoint} connected.");
                 HandleClient(client);
             }
+
+            await Cleanup();
         }
 
         public void Stop()
         {
             cancellationTokenSrc.Cancel();
+        }
+
+        private async Task Cleanup()
+        {
+            foreach(var client in connectedClients)
+            {
+                await ClientDisconnect(client.Client);
+            }
+
+            connectedClients.Clear();
+
+            _listener.Stop();
         }
 
         private async Task ClientDisconnect(TcpClient client)
