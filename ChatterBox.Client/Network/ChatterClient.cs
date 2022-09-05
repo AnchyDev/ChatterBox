@@ -44,7 +44,7 @@ namespace ChatterBox.Client.Network
         private async Task Init()
         {
             var sizeOfPayload = Encoding.UTF8.GetByteCount(Username);
-            var authPayload = new PacketBuilder(PacketTypes.Auth).AppendInt(sizeOfPayload).AppendString(Username).Build();
+            var authPayload = new PacketBuilder(PacketType.Auth).AppendInt(sizeOfPayload).AppendString(Username).Build();
 
             await tcpClient.Client.SendAsync(authPayload, SocketFlags.None);
 
@@ -56,7 +56,7 @@ namespace ChatterBox.Client.Network
                 if (!string.IsNullOrEmpty(message))
                 {
                     sizeOfPayload = Encoding.UTF8.GetByteCount(message);
-                    var messagePayload = new PacketBuilder(PacketTypes.Message).AppendInt(sizeOfPayload).AppendString(message).Build();
+                    var messagePayload = new PacketBuilder(PacketType.Message).AppendInt(sizeOfPayload).AppendString(message).Build();
                     await tcpClient.Client.SendAsync(messagePayload, SocketFlags.None);
                 }
             }

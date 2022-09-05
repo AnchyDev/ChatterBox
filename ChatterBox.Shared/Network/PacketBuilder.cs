@@ -7,7 +7,7 @@ namespace ChatterBox.Shared.Network
         private MemoryStream _ms;
         private BinaryWriter _writer;
 
-        public PacketBuilder(PacketTypes packetType)
+        public PacketBuilder(PacketType packetType)
         {
             _ms = new MemoryStream();
             _writer = new BinaryWriter(_ms);

@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 
 namespace ChatterBox.Shared.Network
 {
-    public enum PacketTypes
+    public enum PacketType
     {
         Auth = 1,
         Message = 2

@@ -62,7 +62,7 @@ namespace ChatterBox.Server.Network
             var packetIdBytes = authPayload.Take(sizeof(int));
             var packetId = BitConverter.ToInt32(packetIdBytes.ToArray());
 
-            if (packetId != (int)PacketTypes.Auth)
+            if (packetId != (int)PacketType.Auth)
             {
                 client.Client.Close();
             }
@@ -107,7 +107,7 @@ namespace ChatterBox.Server.Network
             var packetIdBytes = messagePayload.Take(sizeof(int));
             var packetId = BitConverter.ToInt32(packetIdBytes.ToArray());
 
-            if (packetId != (int)PacketTypes.Message)
+            if (packetId != (int)PacketType.Message)
             {
                 await DisplayMessage("Invalid packet data!");
             }
