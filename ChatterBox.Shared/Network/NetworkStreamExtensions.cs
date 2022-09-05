@@ -5,7 +5,7 @@ namespace ChatterBox.Shared.Network
 {
     public static class NetworkStreamExtensions
     {
-        private static async Task<byte[]> GetBytesAsync(this NetworkStream ns, int length, CancellationToken cancelToken)
+        public static async Task<byte[]> GetBytesAsync(this NetworkStream ns, int length, CancellationToken cancelToken)
         {
             if (!ns.CanRead)
             {
