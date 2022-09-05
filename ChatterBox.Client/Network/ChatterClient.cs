@@ -51,7 +51,15 @@ namespace ChatterBox.Client.Network
 
             while(true)
             {
-                await Task.Delay(100);
+                Console.Write("Enter message: ");
+                string message = Console.ReadLine();
+
+                if (!string.IsNullOrEmpty(message))
+                {
+                    sizeOfPayload = Encoding.UTF8.GetByteCount(message);
+                    var messagePayload = new PacketBuilder(PacketTypes.Message).AppendInt(sizeOfPayload).AppendString(message).Build();
+                    await tcpClient.Client.SendAsync(messagePayload, SocketFlags.None);
+                }
             }
         }
     }
