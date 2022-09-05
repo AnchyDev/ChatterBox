@@ -102,6 +102,21 @@ namespace ChatterBox.Server.Network
 
             user.Name = packetAuth;
 
+            await DisplayMessage("Sending echo to " + user.Client.Client.RemoteEndPoint);
+
+            byte[] echoPacket = new PacketBuilder(PacketType.Auth)
+               .AppendInt(Encoding.UTF8.GetByteCount(user.Name))
+               .AppendString(user.Name)
+               .Build();
+
+            NetworkStream ns = user.Client.GetStream();
+
+            if (ns.CanWrite)
+            {
+                await ns.WriteAsync(echoPacket, 0, echoPacket.Length);
+                await ns.FlushAsync();
+            }
+
             return true;
         }
 
