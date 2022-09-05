@@ -38,16 +38,50 @@ namespace ChatterBox.Client.Network
         {
             tcpClient.Connect(ipAddress, port);
 
-            await Init();
+            await Authenticate();
         }
 
-        private async Task Init()
+        private async Task Authenticate()
         {
-            var sizeOfPayload = Encoding.UTF8.GetByteCount(Username);
-            var authPayload = new PacketBuilder(PacketType.Auth).AppendInt(sizeOfPayload).AppendString(Username).Build();
+            var authPacket = new PacketBuilder(PacketType.Auth)
+                .AppendInt(Encoding.UTF8.GetByteCount(Username))
+                .AppendString(Username)
+                .Build();
 
-            await tcpClient.Client.SendAsync(authPayload, SocketFlags.None);
+            NetworkStream ns = tcpClient.GetStream();
 
+            if (ns.CanWrite)
+            {
+                await ns.WriteAsync(authPacket, 0, authPacket.Length);
+                await ns.FlushAsync();
+            }
+
+            byte[] pTypeBuf = new byte[sizeof(int)];
+            await ns.ReadAsync(pTypeBuf, 0, pTypeBuf.Length);
+
+            PacketType packetType = (PacketType)BitConverter.ToInt32(pTypeBuf);
+
+            if(packetType == PacketType.Auth)
+            {
+                byte[] pLenBuf = new byte[sizeof(int)];
+                await ns.ReadAsync(pLenBuf, 0, pLenBuf.Length);
+
+                int packetLen = BitConverter.ToInt32(pLenBuf);
+
+                byte[] pEchoBuf = new byte[packetLen];
+                await ns.ReadAsync(pEchoBuf, 0, pEchoBuf.Length);
+
+                string packetEcho = Encoding.UTF8.GetString(pEchoBuf);
+
+                if(packetEcho == Username)
+                {
+                    await MessageLoop();
+                }
+            }
+        }
+
+        private async Task MessageLoop()
+        {
             while(true)
             {
                 Console.Write("Enter message: ");
@@ -55,9 +89,12 @@ namespace ChatterBox.Client.Network
 
                 if (!string.IsNullOrEmpty(message))
                 {
-                    sizeOfPayload = Encoding.UTF8.GetByteCount(message);
-                    var messagePayload = new PacketBuilder(PacketType.Message).AppendInt(sizeOfPayload).AppendString(message).Build();
-                    await tcpClient.Client.SendAsync(messagePayload, SocketFlags.None);
+                    var messagePacket = new PacketBuilder(PacketType.Message)
+                        .AppendInt(Encoding.UTF8.GetByteCount(message))
+                        .AppendString(message)
+                        .Build();
+
+                    await tcpClient.Client.SendAsync(messagePacket, SocketFlags.None);
                 }
             }
         }
