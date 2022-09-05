@@ -55,32 +55,27 @@ namespace ChatterBox.Server.Network
         private async Task<bool> AuthenticateClient(TcpClient client)
         {
             await DisplayMessage("Waiting for auth payload from " + client.Client.RemoteEndPoint);
-            var authPayload = new byte[1024];
-            await client.Client.ReceiveAsync(authPayload, SocketFlags.None);
+
+            PacketType packetType = (PacketType)await GetPacketIntFromStream(client.GetStream());
 
             await DisplayMessage("Received data from " + client.Client.RemoteEndPoint);
-            var packetIdBytes = authPayload.Take(sizeof(int));
-            var packetId = BitConverter.ToInt32(packetIdBytes.ToArray());
 
-            if (packetId != (int)PacketType.Auth)
+            if (packetType != PacketType.Auth)
             {
-                client.Client.Close();
+                return false;
             }
 
-            var packetLenBytes = authPayload.Skip(sizeof(int)).Take(sizeof(int));
-            var packetLen = BitConverter.ToInt32(packetLenBytes.ToArray());
+            int packetLength = await GetPacketIntFromStream(client.GetStream());
+            string packetAuth = await GetPacketStringFromStream(client.GetStream(), packetLength);
 
-            var packetPayloadBytes = authPayload.Skip(sizeof(int) + sizeof(int)).Take(packetLen);
-            var packetPayload = Encoding.UTF8.GetString(packetPayloadBytes.ToArray());
-
-            if (connectedClients.Any(c => c.Name == packetPayload))
+            if (connectedClients.Any(c => c.Name == packetAuth))
             {
                 return false;
             }
 
             connectedClients.Add(new ClientData()
             {
-                Name = packetPayload,
+                Name = packetAuth,
                 Client = client
             });
 
@@ -101,26 +96,20 @@ namespace ChatterBox.Server.Network
 
         private async Task<string> ClientAcceptMessage(TcpClient client)
         {
-            var messagePayload = new byte[1024];
-            await client.Client.ReceiveAsync(messagePayload, SocketFlags.None);
+            PacketType packetType = (PacketType)await GetPacketIntFromStream(client.GetStream());
 
-            var packetIdBytes = messagePayload.Take(sizeof(int));
-            var packetId = BitConverter.ToInt32(packetIdBytes.ToArray());
-
-            if (packetId != (int)PacketType.Message)
+            if (packetType != PacketType.Message)
             {
                 await DisplayMessage("Invalid packet data!");
+                return string.Empty;
             }
 
-            var packetLenBytes = messagePayload.Skip(sizeof(int)).Take(sizeof(int));
-            var packetLen = BitConverter.ToInt32(packetLenBytes.ToArray());
-
-            var packetPayloadBytes = messagePayload.Skip(sizeof(int) + sizeof(int)).Take(packetLen);
-            var packetPayload = Encoding.UTF8.GetString(packetPayloadBytes.ToArray());
+            int packetLength = await GetPacketIntFromStream(client.GetStream());
+            string packetMessage = await GetPacketStringFromStream(client.GetStream(), packetLength);
 
             await DisplayMessage("Received data from " + client.Client.RemoteEndPoint);
 
-            return packetPayload;
+            return packetMessage;
         }
 
         private async Task HandleClient(TcpClient client)
@@ -141,8 +130,38 @@ namespace ChatterBox.Server.Network
             while(client.Connected)
             {
                 string message = await ClientAcceptMessage(client);
-                await DisplayMessage($" {message}");
+
+                if(!string.IsNullOrEmpty(message))
+                    await DisplayMessage($"{message}");
             }
+        }
+
+        private async Task<int> GetPacketIntFromStream(NetworkStream ns)
+        {
+            int bytesRead = 0;
+            byte[] buffer = new byte[4];
+
+            do
+            {
+                bytesRead = await ns.ReadAsync(buffer);
+            }
+            while (bytesRead < buffer.Length);
+
+            return BitConverter.ToInt32(buffer);
+        }
+
+        private async Task<string> GetPacketStringFromStream(NetworkStream ns, int len)
+        {
+            int bytesRead = 0;
+            byte[] buffer = new byte[len];
+
+            do
+            {
+                bytesRead = await ns.ReadAsync(buffer);
+            }
+            while (bytesRead < buffer.Length);
+
+            return Encoding.UTF8.GetString(buffer);
         }
     }
 }
