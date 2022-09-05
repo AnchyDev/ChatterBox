@@ -78,6 +78,21 @@ namespace ChatterBox.Client.Network
                     await MessageLoop();
                 }
             }
+
+            if (packetType == PacketType.Disconnect)
+            {
+                byte[] pLenBuf = new byte[sizeof(int)];
+                await ns.ReadAsync(pLenBuf, 0, pLenBuf.Length);
+
+                int packetLen = BitConverter.ToInt32(pLenBuf);
+
+                byte[] pReasonBuf = new byte[packetLen];
+                await ns.ReadAsync(pReasonBuf, 0, pReasonBuf.Length);
+
+                string packetReason = Encoding.UTF8.GetString(pReasonBuf);
+
+                Console.WriteLine($"Disconnected for reason '{packetReason}'.");
+            }
         }
 
         private async Task MessageLoop()

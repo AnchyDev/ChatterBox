@@ -81,6 +81,8 @@ namespace ChatterBox.Server.Network
                 await ns.FlushAsync();
             }
 
+            await DisplayMessage($"Disconnecting client '{client.Client.RemoteEndPoint}' for reason '{reason}'.");
+
             client.Close();
         }
 
@@ -101,6 +103,12 @@ namespace ChatterBox.Server.Network
             string? packetAuth = await user.Client.GetStream().GetStringAsync(packetLength.Value);
 
             user.Name = packetAuth;
+
+            if (connectedClients.Any(c => c.Name == user.Name))
+            {
+                await ClientDisconnect(user.Client, "There is already a user connected with that username.");
+                return false;
+            }
 
             await DisplayMessage("Sending echo to " + user.Client.Client.RemoteEndPoint);
 
@@ -152,12 +160,6 @@ namespace ChatterBox.Server.Network
             if(!await AuthenticateClient(user))
             {
                 await ClientDisconnect(user.Client, "Failed to authenticate client.");
-                return;
-            }
-
-            if (connectedClients.Contains(user))
-            {
-                await ClientDisconnect(user.Client, "There is already a user connected from this endpoint.");
                 return;
             }
 
