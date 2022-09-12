@@ -85,9 +85,11 @@ namespace ChatterBox.Server.Network
 
         private async Task<bool> AuthenticateClient(ChatterUser user)
         {
+            var packetHandler = new PacketHandler(user.Client.GetStream());
+
             await DisplayMessage("Waiting for auth payload from " + user.Client.Client.RemoteEndPoint);
 
-            PacketType packetType = (PacketType)await user.Client.GetStream().GetIntAsync();
+            PacketType packetType = (PacketType)await packetHandler.ReadIntAsync();
 
             await DisplayMessage(">> Received data from " + user.Client.Client.RemoteEndPoint);
 
@@ -96,10 +98,9 @@ namespace ChatterBox.Server.Network
                 return false;
             }
 
-            int? packetLength = await user.Client.GetStream().GetIntAsync();
-            string? packetAuth = await user.Client.GetStream().GetStringAsync(packetLength.Value);
+            string authUser = await packetHandler.ReadStringAsync(hasPrependLen: true);
 
-            user.Name = packetAuth;
+            user.Name = authUser;
 
             if (connectedClients.Any(c => c.Name == user.Name))
             {
@@ -131,24 +132,17 @@ namespace ChatterBox.Server.Network
 
         private async Task<string?> ClientAcceptMessage(ChatterUser user)
         {
-            int? packetType = await user.Client.GetStream().GetIntAsync();
+            var packetHandler = new PacketHandler(user.Client.GetStream());
 
-            if (!packetType.HasValue)
-            {
-                await DisplayMessage("Failed to get packetType.");
-                return null;
-            }
+            PacketType packetType = (PacketType)await packetHandler.ReadIntAsync();
 
-            if((PacketType)packetType != PacketType.Message)
+            if(packetType != PacketType.Message)
             {
                 await DisplayMessage("Packet Type not 'Message'");
                 return null;
             }
 
-            int? packetLength = await user.Client.GetStream().GetIntAsync();
-            string? packetMessage = await user.Client.GetStream().GetStringAsync(packetLength.Value);
-
-            return packetMessage;
+            return await packetHandler.ReadStringAsync(hasPrependLen: true);
         }
 
         private async Task HandleClient(ChatterUser user)

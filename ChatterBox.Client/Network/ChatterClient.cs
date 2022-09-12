@@ -55,24 +55,15 @@ namespace ChatterBox.Client.Network
                 await ns.FlushAsync();
             }
 
-            byte[] pTypeBuf = new byte[sizeof(int)];
-            await ns.ReadAsync(pTypeBuf, 0, pTypeBuf.Length);
+            var packetHandler = new PacketHandler(ns);
 
-            PacketType packetType = (PacketType)BitConverter.ToInt32(pTypeBuf);
+            PacketType packetType = (PacketType)await packetHandler.ReadIntAsync();
 
             if(packetType == PacketType.Auth)
             {
-                byte[] pLenBuf = new byte[sizeof(int)];
-                await ns.ReadAsync(pLenBuf, 0, pLenBuf.Length);
+                string authEcho = await packetHandler.ReadStringAsync(hasPrependLen: true);
 
-                int packetLen = BitConverter.ToInt32(pLenBuf);
-
-                byte[] pEchoBuf = new byte[packetLen];
-                await ns.ReadAsync(pEchoBuf, 0, pEchoBuf.Length);
-
-                string packetEcho = Encoding.UTF8.GetString(pEchoBuf);
-
-                if(packetEcho == Username)
+                if(authEcho == Username)
                 {
                     await MessageLoop();
                 }
@@ -80,17 +71,9 @@ namespace ChatterBox.Client.Network
 
             if (packetType == PacketType.Disconnect)
             {
-                byte[] pLenBuf = new byte[sizeof(int)];
-                await ns.ReadAsync(pLenBuf, 0, pLenBuf.Length);
+                string dcReason = await packetHandler.ReadStringAsync(hasPrependLen: true);
 
-                int packetLen = BitConverter.ToInt32(pLenBuf);
-
-                byte[] pReasonBuf = new byte[packetLen];
-                await ns.ReadAsync(pReasonBuf, 0, pReasonBuf.Length);
-
-                string packetReason = Encoding.UTF8.GetString(pReasonBuf);
-
-                Console.WriteLine($"Disconnected for reason '{packetReason}'.");
+                Console.WriteLine($"Disconnected for reason '{dcReason}'.");
             }
         }
 
