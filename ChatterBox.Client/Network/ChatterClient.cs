@@ -47,15 +47,9 @@ namespace ChatterBox.Client.Network
                 .Append<string>(Username, true)
                 .Build();
 
-            NetworkStream ns = tcpClient.GetStream();
+            await PacketHandler.SendAsync(tcpClient.GetStream(), authPacket);
 
-            if (ns.CanWrite)
-            {
-                await ns.WriteAsync(authPacket, 0, authPacket.Length);
-                await ns.FlushAsync();
-            }
-
-            var packetHandler = new PacketHandler(ns);
+            var packetHandler = new PacketHandler(tcpClient.GetStream());
 
             PacketType packetType = (PacketType)await packetHandler.ReadIntAsync();
 
@@ -82,7 +76,7 @@ namespace ChatterBox.Client.Network
             while(true)
             {
                 Console.Write("Enter message: ");
-                string message = Console.ReadLine();
+                string? message = Console.ReadLine();
 
                 if (!string.IsNullOrEmpty(message))
                 {
@@ -90,7 +84,7 @@ namespace ChatterBox.Client.Network
                         .Append<string>(message, true)
                         .Build();
 
-                    await tcpClient.Client.SendAsync(messagePacket, SocketFlags.None);
+                    await PacketHandler.SendAsync(tcpClient.GetStream(), messagePacket);
                 }
             }
         }

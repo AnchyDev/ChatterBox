@@ -44,5 +44,14 @@ namespace ChatterBox.Shared.Network
 
             return BitConverter.ToInt32(pLenBuf);
         }
+
+        public static async Task SendAsync(NetworkStream networkStream, byte[] payload)
+        {
+            if (networkStream.CanWrite)
+            {
+                await networkStream.WriteAsync(payload, 0, payload.Length);
+                await networkStream.FlushAsync();
+            }
+        }
     }
 }

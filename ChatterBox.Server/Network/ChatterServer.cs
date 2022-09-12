@@ -70,13 +70,7 @@ namespace ChatterBox.Server.Network
                 .Append<string>(reason, true)
                 .Build();
 
-            NetworkStream ns = client.GetStream();
-
-            if(ns.CanWrite)
-            {
-                await ns.WriteAsync(disconnectPacket, 0, disconnectPacket.Length);
-                await ns.FlushAsync();
-            }
+            await PacketHandler.SendAsync(client.GetStream(), disconnectPacket);
 
             await DisplayMessage($"Disconnecting client '{client.Client.RemoteEndPoint}' for reason '{reason}'.");
 
@@ -114,13 +108,7 @@ namespace ChatterBox.Server.Network
                .Append<string>(user.Name, true)
                .Build();
 
-            NetworkStream ns = user.Client.GetStream();
-
-            if (ns.CanWrite)
-            {
-                await ns.WriteAsync(echoPacket, 0, echoPacket.Length);
-                await ns.FlushAsync();
-            }
+            await PacketHandler.SendAsync(user.Client.GetStream(), echoPacket);
 
             return true;
         }
