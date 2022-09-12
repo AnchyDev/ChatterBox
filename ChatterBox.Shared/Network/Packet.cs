@@ -53,7 +53,7 @@ namespace ChatterBox.Shared.Network
                     break;
 
                 default:
-                    throw new InvalidCastException();
+                    throw new NotImplementedException("That type is not yet implemented.");
             }
 
             return this;
