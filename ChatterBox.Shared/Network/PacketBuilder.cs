@@ -31,6 +31,25 @@ namespace ChatterBox.Shared.Network
             return this;
         }
 
+        public PacketBuilder Append<T>(T value)
+        {
+            switch (value)
+            {
+                case int i:
+                    _writer.Write(BitConverter.GetBytes(i));
+                    break;
+
+                case string s:
+                    _writer.Write(Encoding.UTF8.GetBytes(s));
+                    break;
+
+                default:
+                    throw new InvalidCastException();
+            }
+
+            return this;
+        }
+
         public byte[] Build()
         {
             return _ms.ToArray();

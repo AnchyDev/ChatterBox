@@ -1,7 +1,6 @@
 ﻿using ChatterBox.Shared.Network;
 using System.Net;
 using System.Net.Sockets;
-using System.Runtime.CompilerServices;
 using System.Text;
 
 namespace ChatterBox.Server.Network
@@ -67,10 +66,9 @@ namespace ChatterBox.Server.Network
 
         private async Task ClientDisconnect(TcpClient client, string reason)
         {
-
             byte[] disconnectPacket = new PacketBuilder(PacketType.Disconnect)
-                .AppendInt(Encoding.UTF8.GetByteCount(reason))
-                .AppendString(reason)
+                .Append<int>(Encoding.UTF8.GetByteCount(reason))
+                .Append<string>(reason)
                 .Build();
 
             NetworkStream ns = client.GetStream();
@@ -113,8 +111,8 @@ namespace ChatterBox.Server.Network
             await DisplayMessage("Sending echo to " + user.Client.Client.RemoteEndPoint);
 
             byte[] echoPacket = new PacketBuilder(PacketType.Auth)
-               .AppendInt(Encoding.UTF8.GetByteCount(user.Name))
-               .AppendString(user.Name)
+               .Append<int>(Encoding.UTF8.GetByteCount(user.Name))
+               .Append<string>(user.Name)
                .Build();
 
             NetworkStream ns = user.Client.GetStream();

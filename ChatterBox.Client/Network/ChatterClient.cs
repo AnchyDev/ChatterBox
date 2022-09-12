@@ -44,8 +44,8 @@ namespace ChatterBox.Client.Network
         private async Task Authenticate()
         {
             var authPacket = new PacketBuilder(PacketType.Auth)
-                .AppendInt(Encoding.UTF8.GetByteCount(Username))
-                .AppendString(Username)
+                .Append<int>(Encoding.UTF8.GetByteCount(Username))
+                .Append<string>(Username)
                 .Build();
 
             NetworkStream ns = tcpClient.GetStream();
@@ -105,8 +105,8 @@ namespace ChatterBox.Client.Network
                 if (!string.IsNullOrEmpty(message))
                 {
                     var messagePacket = new PacketBuilder(PacketType.Message)
-                        .AppendInt(Encoding.UTF8.GetByteCount(message))
-                        .AppendString(message)
+                        .Append<int>(Encoding.UTF8.GetByteCount(message))
+                        .Append<string>(message)
                         .Build();
 
                     await tcpClient.Client.SendAsync(messagePacket, SocketFlags.None);
