@@ -26,6 +26,11 @@ namespace ChatterBox.Shared.Network
                 length = BitConverter.ToInt32(pLenBuf);
             }
 
+            if(length == 0)
+            {
+                throw new Exception("Length parameter must be more than 0.");
+            }
+
             byte[] pReasonBuf = new byte[length];
             await _ns.ReadAsync(pReasonBuf, 0, pReasonBuf.Length);
 
