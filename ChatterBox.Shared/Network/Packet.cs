@@ -43,6 +43,24 @@ namespace ChatterBox.Shared.Network
                     _writer.Write(BitConverter.GetBytes(i));
                     break;
 
+                case float f:
+                    if (prependLen)
+                    {
+                        Append<int>(sizeof(float), false);
+                    }
+
+                    _writer.Write(BitConverter.GetBytes(f));
+                    break;
+
+                case double d:
+                    if (prependLen)
+                    {
+                        Append<int>(sizeof(double), false);
+                    }
+
+                    _writer.Write(BitConverter.GetBytes(d));
+                    break;
+
                 case string s:
                     if (prependLen)
                     {
@@ -50,6 +68,15 @@ namespace ChatterBox.Shared.Network
                     }
 
                     _writer.Write(Encoding.UTF8.GetBytes(s));
+                    break;
+
+                case byte[] b:
+                    if(prependLen)
+                    {
+                        Append<int>(b.Length, false);
+                    }
+
+                    _writer.Write(b);
                     break;
 
                 default:
