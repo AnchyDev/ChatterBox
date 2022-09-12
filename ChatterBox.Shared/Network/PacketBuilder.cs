@@ -16,21 +16,6 @@ namespace ChatterBox.Shared.Network
             _writer.Write(packetTypeBytes);
         }
 
-        public PacketBuilder AppendInt(int value)
-        {
-            byte[] valueBytes = BitConverter.GetBytes(value);
-            _writer.Write(valueBytes);
-
-            return this;
-        }
-        public PacketBuilder AppendString(string value)
-        {
-            byte[] valueBytes = Encoding.UTF8.GetBytes(value);
-            _writer.Write(valueBytes);
-
-            return this;
-        }
-
         public PacketBuilder Append<T>(T value)
         {
             switch (value)
