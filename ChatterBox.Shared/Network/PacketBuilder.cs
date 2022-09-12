@@ -16,15 +16,25 @@ namespace ChatterBox.Shared.Network
             _writer.Write(packetTypeBytes);
         }
 
-        public PacketBuilder Append<T>(T value)
+        public PacketBuilder Append<T>(T value, bool prependLen = false)
         {
             switch (value)
             {
                 case int i:
+                    if (prependLen)
+                    {
+                        Append<int>(sizeof(int), false);
+                    }
+
                     _writer.Write(BitConverter.GetBytes(i));
                     break;
 
                 case string s:
+                    if(prependLen)
+                    {
+                        Append<int>(Encoding.UTF8.GetByteCount(s), false);
+                    }
+
                     _writer.Write(Encoding.UTF8.GetBytes(s));
                     break;
 
