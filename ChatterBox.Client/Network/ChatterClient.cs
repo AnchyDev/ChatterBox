@@ -43,11 +43,10 @@ namespace ChatterBox.Client.Network
 
         private async Task Authenticate()
         {
-            var authPacket = new PacketBuilder(PacketType.Auth)
-                .Append<string>(Username, true)
-                .Build();
+            var pAuth = Packet.Create(PacketType.Auth)
+                        .Append<string>(Username, true);
 
-            await PacketHandler.SendAsync(tcpClient.GetStream(), authPacket);
+            await PacketHandler.SendAsync(tcpClient.GetStream(), pAuth.Payload);
 
             var packetHandler = new PacketHandler(tcpClient.GetStream());
 
@@ -80,11 +79,10 @@ namespace ChatterBox.Client.Network
 
                 if (!string.IsNullOrEmpty(message))
                 {
-                    var messagePacket = new PacketBuilder(PacketType.Message)
-                        .Append<string>(message, true)
-                        .Build();
+                    var pMessage = Packet.Create(PacketType.Message)
+                        .Append<string>(message, true);
 
-                    await PacketHandler.SendAsync(tcpClient.GetStream(), messagePacket);
+                    await PacketHandler.SendAsync(tcpClient.GetStream(), pMessage.Payload);
                 }
             }
         }

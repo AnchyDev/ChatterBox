@@ -1,22 +1,36 @@
-﻿using System.Text;
+﻿using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Reflection.Metadata.Ecma335;
+using System.Text;
+using System.Threading.Tasks;
 
 namespace ChatterBox.Shared.Network
 {
-    public class PacketBuilder
+    public class Packet
     {
+        public PacketType Type { get; private set; }
+        public byte[] Payload { get => _ms.ToArray(); }
+
         private MemoryStream _ms;
         private BinaryWriter _writer;
 
-        public PacketBuilder(PacketType packetType)
+        public Packet(PacketType packetType)
         {
+            Type = packetType;
+
             _ms = new MemoryStream();
             _writer = new BinaryWriter(_ms);
 
-            byte[] packetTypeBytes = BitConverter.GetBytes((int)packetType);
-            _writer.Write(packetTypeBytes);
+            _writer.Write(BitConverter.GetBytes((int)packetType));
         }
 
-        public PacketBuilder Append<T>(T value, bool prependLen = false)
+        public static Packet Create(PacketType packetType)
+        {
+            return new Packet(packetType);
+        }
+
+        public Packet Append<T>(T value, bool prependLen = false)
         {
             switch (value)
             {
@@ -30,7 +44,7 @@ namespace ChatterBox.Shared.Network
                     break;
 
                 case string s:
-                    if(prependLen)
+                    if (prependLen)
                     {
                         Append<int>(Encoding.UTF8.GetByteCount(s), false);
                     }
@@ -43,11 +57,6 @@ namespace ChatterBox.Shared.Network
             }
 
             return this;
-        }
-
-        public byte[] Build()
-        {
-            return _ms.ToArray();
         }
     }
 }

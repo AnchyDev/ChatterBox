@@ -66,11 +66,10 @@ namespace ChatterBox.Server.Network
 
         private async Task ClientDisconnect(TcpClient client, string reason)
         {
-            byte[] disconnectPacket = new PacketBuilder(PacketType.Disconnect)
-                .Append<string>(reason, true)
-                .Build();
+            var pDisconnect = Packet.Create(PacketType.Disconnect)
+                .Append<string>(reason, true);
 
-            await PacketHandler.SendAsync(client.GetStream(), disconnectPacket);
+            await PacketHandler.SendAsync(client.GetStream(), pDisconnect.Payload);
 
             await DisplayMessage($"Disconnecting client '{client.Client.RemoteEndPoint}' for reason '{reason}'.");
 
@@ -104,11 +103,10 @@ namespace ChatterBox.Server.Network
 
             await DisplayMessage("Sending echo to " + user.Client.Client.RemoteEndPoint);
 
-            byte[] echoPacket = new PacketBuilder(PacketType.Auth)
-               .Append<string>(user.Name, true)
-               .Build();
+            var pEcho = Packet.Create(PacketType.Auth)
+                .Append<string>(user.Name, true);
 
-            await PacketHandler.SendAsync(user.Client.GetStream(), echoPacket);
+            await PacketHandler.SendAsync(user.Client.GetStream(), pEcho.Payload);
 
             return true;
         }
