@@ -4,9 +4,14 @@
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:ChatterBox.Client.Windows"
+        xmlns:vms="clr-namespace:ChatterBox.Client.Windows.ViewModels"
         mc:Ignorable="d"
         Title="MainWindow" Height="450" Width="800">
+    <Window.DataContext>
+        <vms:MainWindowViewModel/>
+    </Window.DataContext>
     <Grid>
-
+        <TextBlock Text="{Binding TextHelloWorld}" FontSize="20"
+                   HorizontalAlignment="Center" VerticalAlignment="Center"/>
     </Grid>
 </Window>
